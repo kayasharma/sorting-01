@@ -1,3 +1,489 @@
+let currentArray = [];
+
+function showElementsInput() {
+  const numElements = document.getElementById("numElements").value;
+  if (numElements > 0) {
+    document.getElementById("elementsInput").style.display = "block";
+    document.getElementById("sortButton").style.display = "block";
+  }
+}
+
+function sortArray() {
+  const elementsInput = document.getElementById("elementsInput").value;
+  currentArray = elementsInput.split(",").map(Number);
+  visualizeArray(currentArray);
+  const selectedAlgorithms = getSelectedAlgorithms();
+  if (selectedAlgorithms.length === 0) {
+    alert("Please select at least one sorting algorithm.");
+    return;
+  }
+  selectedAlgorithms.forEach(async (algorithm) => {
+    const arrayCopy = [...currentArray];
+    await runAlgorithm(algorithm, arrayCopy);
+  });
+}
+
+function getSelectedAlgorithms() {
+  const checkboxes = document.querySelectorAll(
+    'input[type="checkbox"]:checked'
+  );
+  return Array.from(checkboxes).map((checkbox) => checkbox.value);
+}
+
+async function runAlgorithm(algorithm, array) {
+  let startTime, endTime;
+  startTime = performance.now();
+  const containerId = `sortedArrayContainer-${algorithm}`;
+
+  switch (algorithm) {
+    case "bubble":
+      await bubbleSort(array, algorithm);
+      displayTimeComplexity("O(n^2)", "O(n^2)", "O(n)");
+      break;
+    case "insertion":
+      await insertionSort(array, algorithm);
+      displayTimeComplexity("O(n^2)", "O(n^2)", "O(n)");
+      break;
+    case "quicksort":
+      await quickSort(array, 0, array.length - 1, algorithm);
+      displayTimeComplexity("O(n log n)", "O(n log n)", "O(n^2)");
+      break;
+    case "merge":
+      await mergeSort(array, algorithm);
+      displayTimeComplexity("O(n log n)", "O(n log n)", "O(n log n)");
+      break;
+    case "heap":
+      await heapSort(array, algorithm);
+      displayTimeComplexity("O(n log n)", "O(n log n)", "O(n log n)");
+      break;
+    case "radix":
+      await radixSort(array, algorithm);
+      displayTimeComplexity("O(nk)", "O(nk)", "O(nk)");
+      break;
+    case "bucket":
+      await bucketSort(array, algorithm);
+      displayTimeComplexity("O(n + k)", "O(n + k)", "O(n^2)");
+      break;
+    case "counting":
+      await countingSort(array, algorithm);
+      displayTimeComplexity("O(n + k)", "O(n + k)", "O(n + k)");
+      break;
+  }
+
+  endTime = performance.now();
+  displayActualTime((endTime - startTime).toFixed(2), algorithm);
+  visualizeArray(array, containerId, `${algorithm} Sorted Array:`);
+}
+
+function displayTimeComplexity(best, average, worst) {
+  const timeComplexityDiv = document.getElementById("timeComplexity");
+  timeComplexityDiv.innerHTML = `
+    <p>Time Complexity:</p>
+    <ul>
+      <li>Best Case: ${best}</li>
+      <li>Average Case: ${average}</li>
+      <li>Worst Case: ${worst}</li>
+    </ul>
+  `;
+}
+
+function displayActualTime(time, algorithm) {
+  const timeComplexityDiv = document.getElementById("timeComplexity");
+  timeComplexityDiv.innerHTML += `<p>${algorithm} - Actual Time Taken: ${time} milliseconds</p>`;
+}
+
+function resetArray() {
+  visualizeArray(currentArray);
+}
+
+function visualizeArray(
+  array,
+  containerId = "arrayContainer",
+  title = "Original Array:"
+) {
+  let container = document.getElementById(containerId);
+  if (!container) {
+    container = document.createElement("div");
+    container.id = containerId;
+    document.body.appendChild(container);
+  }
+  container.innerHTML = `<h3>${title}</h3>`;
+  const arrayContainer = document.createElement("div");
+  arrayContainer.style.display = "flex";
+  arrayContainer.style.flexDirection = "row";
+  container.appendChild(arrayContainer);
+  array.forEach((value) => {
+    const bar = document.createElement("div");
+    bar.classList.add("bubble");
+    bar.style.height = `${value * 5}px`;
+    bar.textContent = value;
+    arrayContainer.appendChild(bar);
+  });
+}
+
+document
+  .getElementById("generateInputFields")
+  .addEventListener("click", showElementsInput);
+document.getElementById("sortButton").addEventListener("click", sortArray);
+document.getElementById("resetButton").addEventListener("click", resetArray);
+document
+  .getElementById("compareButton")
+  .addEventListener("click", compareAlgorithms);
+
+async function bubbleSort(array, algorithm) {
+  const containerId = `sortedArrayContainer-${algorithm}`;
+  visualizeArray(array, containerId, `${algorithm} - Sorting`);
+  const arrayContainer = document.getElementById(containerId).lastElementChild;
+  if (!arrayContainer) {
+    console.error(`Array container for ${containerId} not found.`);
+    return;
+  }
+  const bars = Array.from(arrayContainer.children);
+  const n = array.length;
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < n - i - 1; j++) {
+      bars[j].classList.add("highlight");
+      bars[j + 1].classList.add("highlight");
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      if (array[j] > array[j + 1]) {
+        bars[j].classList.add("swap");
+        bars[j + 1].classList.add("swap");
+        [array[j], array[j + 1]] = [array[j + 1], array[j]];
+        const tempHeight = bars[j].style.height;
+        bars[j].style.height = bars[j + 1].style.height;
+        bars[j].textContent = array[j];
+        bars[j + 1].style.height = tempHeight;
+        bars[j + 1].textContent = array[j + 1];
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      }
+      bars[j].classList.remove("highlight", "swap");
+      bars[j + 1].classList.remove("highlight", "swap");
+    }
+  }
+  visualizeArray(array, containerId, `${algorithm} Sorted Array:`);
+}
+
+async function insertionSort(array, algorithm) {
+  const containerId = `sortedArrayContainer-${algorithm}`;
+  visualizeArray(array, containerId, `${algorithm} - Sorting`);
+  const arrayContainer = document.getElementById(containerId).lastElementChild;
+  if (!arrayContainer) {
+    console.error(`Array container for ${containerId} not found.`);
+    return;
+  }
+  const bars = Array.from(arrayContainer.children);
+  const n = array.length;
+  for (let i = 1; i < n; i++) {
+    let key = array[i];
+    let j = i - 1;
+    while (j >= 0 && array[j] > key) {
+      bars[j + 1].classList.add("highlight");
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      array[j + 1] = array[j];
+      bars[j + 1].style.height = bars[j].style.height;
+      bars[j + 1].textContent = array[j];
+      bars[j + 1].classList.remove("highlight");
+      j = j - 1;
+    }
+    array[j + 1] = key;
+    bars[j + 1].style.height = `${key * 5}px`;
+    bars[j + 1].textContent = key;
+  }
+  visualizeArray(array, containerId, `${algorithm} Sorted Array:`);
+}
+
+async function quickSort(array, low, high, algorithm) {
+  const containerId = `sortedArrayContainer-${algorithm}`;
+  visualizeArray(array, containerId, `${algorithm} - Sorting`);
+  const arrayContainer = document.getElementById(containerId).lastElementChild;
+  const bars = Array.from(arrayContainer.children);
+
+  if (low < high) {
+    const pi = await partition(array, low, high, algorithm, bars);
+    await quickSort(array, low, pi - 1, algorithm);
+    await quickSort(array, pi + 1, high, algorithm);
+  }
+
+  visualizeArray(array, containerId, `${algorithm} Sorted Array:`);
+}
+
+async function partition(array, low, high, algorithm, bars) {
+  const pivot = array[high];
+  let i = low - 1;
+  for (let j = low; j < high; j++) {
+    bars[j].classList.add("highlight");
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    if (array[j] < pivot) {
+      i++;
+      [array[i], array[j]] = [array[j], array[i]];
+      const tempHeight = bars[i].style.height;
+      bars[i].style.height = bars[j].style.height;
+      bars[i].textContent = array[i];
+      bars[j].style.height = tempHeight;
+      bars[j].textContent = array[j];
+      bars[j].classList.remove("highlight");
+    }
+  }
+  [array[i + 1], array[high]] = [array[high], array[i + 1]];
+  const tempHeight = bars[i + 1].style.height;
+  bars[i + 1].style.height = bars[high].style.height;
+  bars[i + 1].textContent = array[i + 1];
+  bars[high].style.height = tempHeight;
+  bars[high].textContent = array[high];
+  return i + 1;
+}
+async function mergeSort(array, algorithm) {
+  const containerId = `sortedArrayContainer-${algorithm}`;
+  visualizeArray(array, containerId, `${algorithm} - Sorting`);
+  const arrayContainer = document.getElementById(containerId).lastElementChild;
+  if (!arrayContainer) {
+    console.error(`Array container for ${containerId} not found.`);
+    return;
+  }
+  const bars = Array.from(arrayContainer.children);
+  if (array.length < 2) return array;
+  const mid = Math.floor(array.length / 2);
+  const left = array.slice(0, mid);
+  const right = array.slice(mid);
+  await mergeSort(left, algorithm);
+  await mergeSort(right, algorithm);
+  return await merge(array, left, right, algorithm, bars);
+}
+async function mergeSort(array, algorithm) {
+  const containerId = `sortedArrayContainer-${algorithm}`;
+  visualizeArray(array, containerId, `${algorithm} - Sorting`);
+  if (array.length < 2) return array;
+
+  const mid = Math.floor(array.length / 2);
+  const left = array.slice(0, mid);
+  const right = array.slice(mid);
+
+  await mergeSort(left, algorithm);
+  await mergeSort(right, algorithm);
+
+  return await merge(array, left, right, algorithm, containerId);
+}
+
+async function merge(array, left, right, algorithm, containerId) {
+  const arrayContainer = document.getElementById(containerId).lastElementChild;
+  if (!arrayContainer) {
+    console.error(`Array container for ${containerId} not found.`);
+    return;
+  }
+  const bars = Array.from(arrayContainer.children);
+
+  let i = 0,
+    j = 0,
+    k = 0;
+
+  while (i < left.length && j < right.length) {
+    if (left[i] <= right[j]) {
+      array[k] = left[i];
+      if (bars[k]) {
+        bars[k].style.height = `${left[i] * 5}px`;
+        bars[k].textContent = left[i];
+        bars[k].classList.add("highlight");
+        await new Promise((resolve) => setTimeout(resolve, 200));
+        bars[k].classList.remove("highlight");
+      }
+      i++;
+    } else {
+      array[k] = right[j];
+      if (bars[k]) {
+        bars[k].style.height = `${right[j] * 5}px`;
+        bars[k].textContent = right[j];
+        bars[k].classList.add("highlight");
+        await new Promise((resolve) => setTimeout(resolve, 200));
+        bars[k].classList.remove("highlight");
+      }
+      j++;
+    }
+    k++;
+  }
+
+  while (i < left.length) {
+    array[k] = left[i];
+    if (bars[k]) {
+      bars[k].style.height = `${left[i] * 5}px`;
+      bars[k].textContent = left[i];
+      bars[k].classList.add("highlight");
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      bars[k].classList.remove("highlight");
+    }
+    i++;
+    k++;
+  }
+
+  while (j < right.length) {
+    array[k] = right[j];
+    if (bars[k]) {
+      bars[k].style.height = `${right[j] * 5}px`;
+      bars[k].textContent = right[j];
+      bars[k].classList.add("highlight");
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      bars[k].classList.remove("highlight");
+    }
+    j++;
+    k++;
+  }
+
+  visualizeArray(array, containerId, `${algorithm} Sorted Array:`);
+  return array;
+}
+
+async function heapSort(array, algorithm) {
+  const containerId = `sortedArrayContainer-${algorithm}`;
+  visualizeArray(array, containerId, `${algorithm} - Sorting`);
+  const arrayContainer = document.getElementById(containerId).lastElementChild;
+  const bars = Array.from(arrayContainer.children);
+  const n = array.length;
+  for (let i = Math.floor(n / 2) - 1; i >= 0; i--) {
+    await heapify(array, n, i, bars);
+  }
+  for (let i = n - 1; i > 0; i--) {
+    [array[0], array[i]] = [array[i], array[0]];
+    const tempHeight = bars[0].style.height;
+    bars[0].style.height = bars[i].style.height;
+    bars[0].textContent = array[0];
+    bars[i].style.height = tempHeight;
+    bars[i].textContent = array[i];
+    bars[i].classList.add("highlight");
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    bars[i].classList.remove("highlight");
+    await heapify(array, i, 0, bars);
+  }
+  visualizeArray(array, containerId, `${algorithm} Sorted Array:`);
+}
+async function heapify(array, n, i, bars) {
+  let largest = i;
+  const left = 2 * i + 1;
+  const right = 2 * i + 2;
+  if (left < n && array[left] > array[largest]) {
+    largest = left;
+  }
+  if (right < n && array[right] > array[largest]) {
+    largest = right;
+  }
+  if (largest !== i) {
+    [array[i], array[largest]] = [array[largest], array[i]];
+    const tempHeight = bars[i].style.height;
+    bars[i].style.height = bars[largest].style.height;
+    bars[i].textContent = array[i];
+    bars[largest].style.height = tempHeight;
+    bars[largest].textContent = array[largest];
+    bars[i].classList.add("highlight");
+    bars[largest].classList.add("highlight");
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    bars[i].classList.remove("highlight");
+    bars[largest].classList.remove("highlight");
+    await heapify(array, n, largest, bars);
+  }
+}
+async function radixSort(array, algorithm) {
+  const containerId = `sortedArrayContainer-${algorithm}`;
+  visualizeArray(array, containerId, `${algorithm} - Sorting`);
+  const arrayContainer = document.getElementById(containerId).lastElementChild;
+  const bars = Array.from(arrayContainer.children);
+  const max = Math.max(...array);
+  const numDigits = Math.floor(Math.log10(max)) + 1;
+  for (let i = 0; i < numDigits; i++) {
+    const buckets = Array.from({ length: 10 }, () => []);
+    for (let j = 0; j < array.length; j++) {
+      const digit = Math.floor(array[j] / Math.pow(10, i)) % 10;
+      buckets[digit].push(array[j]);
+    }
+    let k = 0;
+    for (let j = 0; j < 10; j++) {
+      for (let value of buckets[j]) {
+        array[k] = value;
+        bars[k].style.height = `${array[k] * 5}px`;
+        bars[k].textContent = array[k];
+        bars[k].classList.add("highlight");
+        await new Promise((resolve) => setTimeout(resolve, 200));
+        bars[k].classList.remove("highlight");
+        k++;
+      }
+    }
+  }
+  visualizeArray(array, containerId, `${algorithm} Sorted Array:`);
+}
+async function bucketSort(array, algorithm) {
+  const containerId = `sortedArrayContainer-${algorithm}`;
+  visualizeArray(array, containerId, `${algorithm} - Sorting`);
+  const arrayContainer = document.getElementById(containerId).lastElementChild;
+  const bars = Array.from(arrayContainer.children);
+  const numBuckets = Math.ceil(Math.sqrt(array.length));
+  const min = Math.min(...array);
+  const max = Math.max(...array);
+  const bucketRange = (max - min) / numBuckets;
+  const buckets = Array.from({ length: numBuckets }, () => []);
+  for (let i = 0; i < array.length; i++) {
+    const bucketIndex = Math.floor((array[i] - min) / bucketRange);
+    if (bucketIndex >= numBuckets) {
+      buckets[numBuckets - 1].push(array[i]);
+    } else {
+      buckets[bucketIndex].push(array[i]);
+    }
+  }
+  let k = 0;
+  for (let i = 0; i < buckets.length; i++) {
+    if (buckets[i].length > 0) {
+      await insertionSortInBucket(buckets[i], k, bars);
+      for (let j = 0; j < buckets[i].length; j++) {
+        array[k++] = buckets[i][j];
+      }
+    }
+  }
+  visualizeArray(array, containerId, `${algorithm} Sorted Array:`);
+}
+async function insertionSortInBucket(bucket, offset, bars) {
+  const n = bucket.length;
+  for (let i = 1; i < n; i++) {
+    let key = bucket[i];
+    let j = i - 1;
+    while (j >= 0 && bucket[j] > key) {
+      bucket[j + 1] = bucket[j];
+      bars[offset + j + 1].style.height = `${bucket[j] * 5}px`;
+      bars[offset + j + 1].textContent = bucket[j];
+      bars[offset + j + 1].classList.add("highlight");
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      bars[offset + j + 1].classList.remove("highlight");
+      j = j - 1;
+    }
+    bucket[j + 1] = key;
+    bars[offset + j + 1].style.height = `${key * 5}px`;
+    bars[offset + j + 1].textContent = key;
+    bars[offset + j + 1].classList.add("highlight");
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    bars[offset + j + 1].classList.remove("highlight");
+  }
+}
+async function countingSort(array, algorithm) {
+  const containerId = `sortedArrayContainer-${algorithm}`;
+  visualizeArray(array, containerId, `${algorithm} - Sorting`);
+  const arrayContainer = document.getElementById(containerId).lastElementChild;
+  const bars = Array.from(arrayContainer.children);
+  const max = Math.max(...array);
+  const count = Array(max + 1).fill(0);
+  for (let i = 0; i < array.length; i++) {
+    count[array[i]]++;
+  }
+  let k = 0;
+  for (let i = 0; i <= max; i++) {
+    while (count[i] > 0) {
+      array[k++] = i;
+      count[i]--;
+    }
+  }
+  for (let k = 0; k < array.length; k++) {
+    bars[k].style.height = `${array[k] * 5}px`;
+    bars[k].textContent = array[k];
+    bars[k].classList.add("highlight");
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    bars[k].classList.remove("highlight");
+  }
+  visualizeArray(array, containerId, `${algorithm} Sorted Array:`);
+}
 async function compareAlgorithms() {
   const selectedAlgorithms = getSelectedAlgorithms();
   if (selectedAlgorithms.length === 0) {
@@ -38,11 +524,29 @@ async function compareAlgorithms() {
     times.push({ algorithm, time: (endTime - startTime).toFixed(2) });
   }
   displayComparisonChart(times);
-  highlightFastestAlgorithm(times);
 }
-
-function highlightFastestAlgorithm(times) {
-  const fastest = times.reduce((min, t) => (t.time < min.time ? t : min), times[0]);
-  const timeComplexityDiv = document.getElementById("timeComplexity");
-  timeComplexityDiv.innerHTML += `<p>Fastest Algorithm: <strong>${fastest.algorithm}</strong> with ${fastest.time} milliseconds</p>`;
+function displayComparisonChart(times) {
+  const chartContainer = document.getElementById("chartContainer");
+  chartContainer.innerHTML = '<canvas id="comparisonChart"></canvas>';
+  const ctx = document.getElementById("comparisonChart").getContext("2d");
+  new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: times.map((t) => t.algorithm),
+      datasets: [
+        {
+          label: "Time Taken (ms)",
+          data: times.map((t) => t.time),
+          backgroundColor: "rgba(75, 192, 192, 0.2)",
+          borderColor: "rgba(75, 192, 192, 1)",
+          borderWidth: 1,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: { y: { beginAtZero: true } },
+    },
+  });
 }

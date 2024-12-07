@@ -232,23 +232,7 @@ async function partition(array, low, high, algorithm, bars) {
   bars[high].textContent = array[high];
   return i + 1;
 }
-async function mergeSort(array, algorithm) {
-  const containerId = `sortedArrayContainer-${algorithm}`;
-  visualizeArray(array, containerId, `${algorithm} - Sorting`);
-  const arrayContainer = document.getElementById(containerId).lastElementChild;
-  if (!arrayContainer) {
-    console.error(`Array container for ${containerId} not found.`);
-    return;
-  }
-  const bars = Array.from(arrayContainer.children);
-  if (array.length < 2) return array;
-  const mid = Math.floor(array.length / 2);
-  const left = array.slice(0, mid);
-  const right = array.slice(mid);
-  await mergeSort(left, algorithm);
-  await mergeSort(right, algorithm);
-  return await merge(array, left, right, algorithm, bars);
-}
+
 async function mergeSort(array, algorithm) {
   const containerId = `sortedArrayContainer-${algorithm}`;
   visualizeArray(array, containerId, `${algorithm} - Sorting`);
@@ -354,6 +338,7 @@ async function heapSort(array, algorithm) {
   }
   visualizeArray(array, containerId, `${algorithm} Sorted Array:`);
 }
+
 async function heapify(array, n, i, bars) {
   let largest = i;
   const left = 2 * i + 1;
@@ -379,6 +364,7 @@ async function heapify(array, n, i, bars) {
     await heapify(array, n, largest, bars);
   }
 }
+
 async function radixSort(array, algorithm) {
   const containerId = `sortedArrayContainer-${algorithm}`;
   visualizeArray(array, containerId, `${algorithm} - Sorting`);
@@ -524,11 +510,30 @@ async function compareAlgorithms() {
     times.push({ algorithm, time: (endTime - startTime).toFixed(2) });
   }
   displayComparisonChart(times);
+  highlightFastestAlgorithm(times);
 }
+
+function highlightFastestAlgorithm(times) {
+  const fastest = times.reduce(
+    (min, t) => (t.time < min.time ? t : min),
+    times[0]
+  );
+  const timeComplexityDiv = document.getElementById("timeComplexity");
+  timeComplexityDiv.innerHTML = "";
+
+  times.forEach((t) => {
+    const color = t.algorithm === fastest.algorithm ? "limegreen" : "initial";
+    timeComplexityDiv.innerHTML += `<p style="color: ${color};">${t.algorithm} - Time Taken: <strong>${t.time}</strong> milliseconds</p>`;
+  });
+
+  timeComplexityDiv.innerHTML += `<p><strong>Fastest Algorithm: ${fastest.algorithm}</strong> with ${fastest.time} milliseconds</p>`;
+}
+
 function displayComparisonChart(times) {
   const chartContainer = document.getElementById("chartContainer");
   chartContainer.innerHTML = '<canvas id="comparisonChart"></canvas>';
   const ctx = document.getElementById("comparisonChart").getContext("2d");
+
   new Chart(ctx, {
     type: "bar",
     data: {
@@ -537,7 +542,13 @@ function displayComparisonChart(times) {
         {
           label: "Time Taken (ms)",
           data: times.map((t) => t.time),
-          backgroundColor: "rgba(75, 192, 192, 0.2)",
+          backgroundColor: times.map((t) =>
+            t.algorithm ===
+            times.reduce((min, t) => (t.time < min.time ? t : min), times[0])
+              .algorithm
+              ? "limegreen"
+              : "rgba(75, 192, 192, 0.2)"
+          ),
           borderColor: "rgba(75, 192, 192, 1)",
           borderWidth: 1,
         },
@@ -546,7 +557,11 @@ function displayComparisonChart(times) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      scales: { y: { beginAtZero: true } },
+      scales: {
+        y: {
+          beginAtZero: true,
+        },
+      },
     },
   });
 }

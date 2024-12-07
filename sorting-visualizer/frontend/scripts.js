@@ -12,6 +12,9 @@ function sortArray() {
   const elementsInput = document.getElementById("elementsInput").value;
   currentArray = elementsInput.split(",").map(Number);
   visualizeArray(currentArray);
+}
+document.getElementById("sortButton").addEventListener("click", () => {
+  sortArray();
   const selectedAlgorithms = getSelectedAlgorithms();
   if (selectedAlgorithms.length === 0) {
     alert("Please select at least one sorting algorithm.");
@@ -21,7 +24,11 @@ function sortArray() {
     const arrayCopy = [...currentArray];
     await runAlgorithm(algorithm, arrayCopy);
   });
-}
+});
+document.getElementById("compareButton").addEventListener("click", () => {
+  sortArray();
+  compareAlgorithms();
+});
 
 function getSelectedAlgorithms() {
   const checkboxes = document.querySelectorAll(
@@ -477,33 +484,33 @@ async function compareAlgorithms() {
     return;
   }
   const times = [];
+  const arrayCopy = [...currentArray]; // Use a single copy for all algorithms
   for (let algorithm of selectedAlgorithms) {
-    const arrayCopy = [...currentArray];
     let startTime = performance.now();
     switch (algorithm) {
       case "bubble":
-        await bubbleSort(arrayCopy, algorithm);
+        await bubbleSort([...arrayCopy], algorithm); // Pass a copy to each sort
         break;
       case "insertion":
-        await insertionSort(arrayCopy, algorithm);
+        await insertionSort([...arrayCopy], algorithm);
         break;
       case "quicksort":
-        await quickSort(arrayCopy, 0, arrayCopy.length - 1, algorithm);
+        await quickSort([...arrayCopy], 0, arrayCopy.length - 1, algorithm);
         break;
       case "merge":
-        await mergeSort(arrayCopy, algorithm);
+        await mergeSort([...arrayCopy], algorithm);
         break;
       case "heap":
-        await heapSort(arrayCopy, algorithm);
+        await heapSort([...arrayCopy], algorithm);
         break;
       case "radix":
-        await radixSort(arrayCopy, algorithm);
+        await radixSort([...arrayCopy], algorithm);
         break;
       case "bucket":
-        await bucketSort(arrayCopy, algorithm);
+        await bucketSort([...arrayCopy], algorithm);
         break;
       case "counting":
-        await countingSort(arrayCopy, algorithm);
+        await countingSort([...arrayCopy], algorithm);
         break;
     }
     let endTime = performance.now();

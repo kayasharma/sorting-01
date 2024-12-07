@@ -1,7 +1,5 @@
-// Declare the variable at the top of the script.
 let currentArray = [];
 
-// Function to show input fields for the array
 function showElementsInput() {
   const numElements = document.getElementById("numElements").value;
   if (numElements > 0) {
@@ -10,66 +8,93 @@ function showElementsInput() {
   }
 }
 
-// Function to sort the array based on the chosen algorithm
 function sortArray() {
   const elementsInput = document.getElementById("elementsInput").value;
   currentArray = elementsInput.split(",").map(Number);
-  visualizeArray(currentArray); // Visualize the input array before sorting
+  visualizeArray(currentArray);
   const algorithm = document.getElementById("sortingAlgorithm").value;
+  let startTime, endTime;
+  startTime = performance.now();
+
   switch (algorithm) {
     case "bubble":
       bubbleSort(currentArray);
+      displayTimeComplexity("O(n^2)", "O(n^2)", "O(n)");
       break;
     case "insertion":
       insertionSort(currentArray);
+      displayTimeComplexity("O(n^2)", "O(n^2)", "O(n)");
       break;
     case "quicksort":
       quickSort(currentArray, 0, currentArray.length - 1);
+      displayTimeComplexity("O(n log n)", "O(n log n)", "O(n^2)");
       break;
     case "merge":
       mergeSort(currentArray);
+      displayTimeComplexity("O(n log n)", "O(n log n)", "O(n log n)");
       break;
     case "heap":
       heapSort(currentArray);
+      displayTimeComplexity("O(n log n)", "O(n log n)", "O(n log n)");
       break;
     case "radix":
       radixSort(currentArray);
+      displayTimeComplexity("O(nk)", "O(nk)", "O(nk)");
       break;
     case "bucket":
       bucketSort(currentArray);
+      displayTimeComplexity("O(n + k)", "O(n + k)", "O(n^2)");
       break;
     case "counting":
       countingSort(currentArray);
+      displayTimeComplexity("O(n + k)", "O(n + k)", "O(n + k)");
       break;
     default:
       bubbleSort(currentArray);
+      displayTimeComplexity("O(n^2)", "O(n^2)", "O(n)");
   }
+
+  endTime = performance.now();
+  displayActualTime((endTime - startTime).toFixed(2));
 }
 
-// Function to reset the array visualization
+function displayTimeComplexity(best, average, worst) {
+  const timeComplexityDiv = document.getElementById("timeComplexity");
+  timeComplexityDiv.innerHTML = `
+    <p>Time Complexity:</p>
+    <ul>
+      <li>Best Case: ${best}</li>
+      <li>Average Case: ${average}</li>
+      <li>Worst Case: ${worst}</li>
+    </ul>
+  `;
+}
+
+function displayActualTime(time) {
+  const timeComplexityDiv = document.getElementById("timeComplexity");
+  timeComplexityDiv.innerHTML += `<p>Actual Time Taken: ${time} milliseconds</p>`;
+}
+
 function resetArray() {
-  visualizeArray(currentArray); // Visualize the original array
+  visualizeArray(currentArray);
 }
 
-// Function to visualize the array using bars
 function visualizeArray(array) {
   const arrayContainer = document.getElementById("arrayContainer");
   arrayContainer.innerHTML = "";
   array.forEach((value) => {
     const bar = document.createElement("div");
     bar.classList.add("bubble");
-    bar.style.height = `${value * 5}px`; // Adjust height for visualization
+    bar.style.height = `${value * 5}px`;
     bar.textContent = value;
     arrayContainer.appendChild(bar);
   });
 }
 
-// Function to compare sorting algorithms (placeholder)
 function compareAlgorithms() {
   console.log("Comparison of sorting algorithms is not yet implemented.");
 }
 
-// Event listeners for buttons
 document
   .getElementById("generateInputFields")
   .addEventListener("click", showElementsInput);
@@ -79,7 +104,6 @@ document
   .getElementById("compareButton")
   .addEventListener("click", compareAlgorithms);
 
-// Bubble Sort implementation
 async function bubbleSort(array) {
   const arrayContainer = document.getElementById("arrayContainer");
   const bars = Array.from(arrayContainer.children);
@@ -114,7 +138,6 @@ async function bubbleSort(array) {
   visualizeArray(array);
 }
 
-// Insertion Sort implementation
 async function insertionSort(array) {
   const arrayContainer = document.getElementById("arrayContainer");
   const bars = Array.from(arrayContainer.children);
@@ -125,11 +148,15 @@ async function insertionSort(array) {
     let j = i - 1;
 
     while (j >= 0 && array[j] > key) {
+      bars[j + 1].classList.add("highlight");
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
       array[j + 1] = array[j];
       bars[j + 1].style.height = bars[j].style.height;
       bars[j + 1].textContent = array[j];
+
+      bars[j + 1].classList.remove("highlight");
       j = j - 1;
-      await new Promise((resolve) => setTimeout(resolve, 500));
     }
     array[j + 1] = key;
     bars[j + 1].style.height = `${key * 5}px`;
@@ -139,14 +166,13 @@ async function insertionSort(array) {
   visualizeArray(array);
 }
 
-// QuickSort implementation
 async function quickSort(array, low, high) {
   if (low < high) {
     const pi = await partition(array, low, high);
     await quickSort(array, low, pi - 1);
     await quickSort(array, pi + 1, high);
   }
-  visualizeArray(array); // Visualize the array after sorting
+  visualizeArray(array);
 }
 
 async function partition(array, low, high) {
@@ -156,6 +182,9 @@ async function partition(array, low, high) {
   let i = low - 1;
 
   for (let j = low; j < high; j++) {
+    bars[j].classList.add("highlight");
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
     if (array[j] < pivot) {
       i++;
       [array[i], array[j]] = [array[j], array[i]];
@@ -166,7 +195,7 @@ async function partition(array, low, high) {
       bars[j].style.height = tempHeight;
       bars[j].textContent = array[j];
 
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      bars[j].classList.remove("highlight");
     }
   }
   [array[i + 1], array[high]] = [array[high], array[i + 1]];
@@ -180,71 +209,83 @@ async function partition(array, low, high) {
   return i + 1;
 }
 
-// Merge Sort implementation
-async function mergeSort(array) {
-  if (array.length < 2) return array;
-
-  const mid = Math.floor(array.length / 2);
-  const left = array.slice(0, mid);
-  const right = array.slice(mid);
-
-  await mergeSort(left);
-  await mergeSort(right);
-
-  await merge(array, left, right);
-  visualizeArray(array); // Visualize the array after sorting
-}
-
 async function merge(array, left, right) {
   const arrayContainer = document.getElementById("arrayContainer");
   const bars = Array.from(arrayContainer.children);
-  let i = 0;
-  let j = 0;
-  let k = 0;
+
+  if (bars.length !== array.length) {
+    console.error(
+      "Mismatch between array size and visual bars. Check visualization."
+    );
+    return;
+  }
+
+  let i = 0,
+    j = 0,
+    k = 0;
 
   while (i < left.length && j < right.length) {
-    if (left[i] < right[j]) {
+    if (left[i] <= right[j]) {
       array[k] = left[i];
-      bars[k].style.height = `${left[i] * 5}px`;
-      bars[k].textContent = left[i];
+      if (bars[k]) {
+        bars[k].style.height = `${left[i] * 5}px`;
+        bars[k].textContent = left[i];
+        bars[k].classList.add("highlight");
+        await new Promise((resolve) => setTimeout(resolve, 200));
+        bars[k].classList.remove("highlight");
+      }
       i++;
     } else {
       array[k] = right[j];
-      bars[k].style.height = `${right[j] * 5}px`;
-      bars[k].textContent = right[j];
+      if (bars[k]) {
+        bars[k].style.height = `${right[j] * 5}px`;
+        bars[k].textContent = right[j];
+        bars[k].classList.add("highlight");
+        await new Promise((resolve) => setTimeout(resolve, 200));
+        bars[k].classList.remove("highlight");
+      }
       j++;
     }
-    await new Promise((resolve) => setTimeout(resolve, 500));
     k++;
   }
 
   while (i < left.length) {
     array[k] = left[i];
-    bars[k].style.height = `${left[i] * 5}px`;
-    bars[k].textContent = left[i];
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    if (bars[k]) {
+      bars[k].style.height = `${left[i] * 5}px`;
+      bars[k].textContent = left[i];
+      bars[k].classList.add("highlight");
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      bars[k].classList.remove("highlight");
+    }
     i++;
     k++;
   }
 
   while (j < right.length) {
     array[k] = right[j];
-    bars[k].style.height = `${right[j] * 5}px`;
-    bars[k].textContent = right[j];
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    if (bars[k]) {
+      bars[k].style.height = `${right[j] * 5}px`;
+      bars[k].textContent = right[j];
+      bars[k].classList.add("highlight");
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      bars[k].classList.remove("highlight");
+    }
     j++;
     k++;
   }
+
+  visualizeArray(array);
+  return array;
 }
 
-// Heap Sort implementation
 async function heapSort(array) {
   const arrayContainer = document.getElementById("arrayContainer");
   const bars = Array.from(arrayContainer.children);
   const n = array.length;
 
   for (let i = Math.floor(n / 2) - 1; i >= 0; i--) {
-    await heapify(array, n, i);
+    await heapify(array, n, i, bars);
   }
 
   for (let i = n - 1; i > 0; i--) {
@@ -256,159 +297,157 @@ async function heapSort(array) {
     bars[i].style.height = tempHeight;
     bars[i].textContent = array[i];
 
-    await heapify(array, i, 0);
+    bars[i].classList.add("highlight");
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    bars[i].classList.remove("highlight");
+
+    await heapify(array, i, 0, bars);
   }
 
   visualizeArray(array);
 }
 
-async function heapify(array, n, i) {
-  const arrayContainer = document.getElementById("arrayContainer");
-  const bars = Array.from(arrayContainer.children);
-  let largest = i; // Initialize the largest as the root
+async function heapify(array, n, i, bars) {
+  let largest = i;
   const left = 2 * i + 1;
   const right = 2 * i + 2;
 
-  // If left child is larger than root
   if (left < n && array[left] > array[largest]) {
     largest = left;
   }
 
-  // If right child is larger than the largest so far
   if (right < n && array[right] > array[largest]) {
     largest = right;
   }
 
-  // If the largest is not the root
   if (largest !== i) {
     [array[i], array[largest]] = [array[largest], array[i]];
 
-    // Update the visualization
     const tempHeight = bars[i].style.height;
     bars[i].style.height = bars[largest].style.height;
     bars[i].textContent = array[i];
     bars[largest].style.height = tempHeight;
     bars[largest].textContent = array[largest];
 
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    bars[i].classList.add("highlight");
+    bars[largest].classList.add("highlight");
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    bars[i].classList.remove("highlight");
+    bars[largest].classList.remove("highlight");
 
-    // Recursively heapify the affected sub-tree
-    await heapify(array, n, largest);
+    await heapify(array, n, largest, bars);
   }
 }
 
-// Radix Sort implementation
 async function radixSort(array) {
   const arrayContainer = document.getElementById("arrayContainer");
   const bars = Array.from(arrayContainer.children);
   const max = Math.max(...array);
-  let exp = 1; // Start with the least significant digit
+  const numDigits = Math.floor(Math.log10(max)) + 1;
 
-  while (Math.floor(max / exp) > 0) {
-    await countingSortByDigit(array, exp);
-    exp *= 10;
-  }
+  for (let i = 0; i < numDigits; i++) {
+    const buckets = Array.from({ length: 10 }, () => []);
+    for (let j = 0; j < array.length; j++) {
+      const digit = Math.floor(array[j] / Math.pow(10, i)) % 10;
+      buckets[digit].push(array[j]);
+    }
 
-  visualizeArray(array);
-}
-
-async function countingSortByDigit(array, exp) {
-  const n = array.length;
-  const output = new Array(n);
-  const count = new Array(10).fill(0);
-
-  // Count occurrences
-  for (let i = 0; i < n; i++) {
-    const index = Math.floor(array[i] / exp) % 10;
-    count[index]++;
-  }
-
-  // Update count array to hold actual position
-  for (let i = 1; i < 10; i++) {
-    count[i] += count[i - 1];
-  }
-
-  // Build the output array
-  for (let i = n - 1; i >= 0; i--) {
-    const index = Math.floor(array[i] / exp) % 10;
-    output[count[index] - 1] = array[i];
-    count[index]--;
-  }
-
-  // Copy the output array back to the original array
-  for (let i = 0; i < n; i++) {
-    array[i] = output[i];
-    const bar = bars[i];
-    bar.style.height = `${array[i] * 5}px`;
-    bar.textContent = array[i];
-    await new Promise((resolve) => setTimeout(resolve, 500));
-  }
-}
-
-// Bucket Sort implementation
-async function bucketSort(array) {
-  const n = array.length;
-  const arrayContainer = document.getElementById("arrayContainer");
-  const bars = Array.from(arrayContainer.children);
-
-  if (n <= 1) return; // No sorting needed for an empty or single-element array
-
-  const max = Math.max(...array);
-  const bucketCount = Math.ceil(Math.sqrt(n));
-  const buckets = Array.from({ length: bucketCount }, () => []);
-
-  // Place array elements in buckets
-  for (let i = 0; i < n; i++) {
-    const index = Math.floor((array[i] / max) * (bucketCount - 1));
-    buckets[index].push(array[i]);
-  }
-
-  // Sort each bucket and concatenate
-  for (let i = 0; i < bucketCount; i++) {
-    buckets[i].sort((a, b) => a - b);
-    for (let j = 0; j < buckets[i].length; j++) {
-      array[i * buckets[i].length + j] = buckets[i][j];
-      const bar = bars[i * buckets[i].length + j];
-      bar.style.height = `${array[i * buckets[i].length + j] * 5}px`;
-      bar.textContent = array[i * buckets[i].length + j];
-      await new Promise((resolve) => setTimeout(resolve, 500));
+    let k = 0;
+    for (let j = 0; j < 10; j++) {
+      for (let value of buckets[j]) {
+        array[k] = value;
+        bars[k].style.height = `${array[k] * 5}px`;
+        bars[k].textContent = array[k];
+        bars[k].classList.add("highlight");
+        await new Promise((resolve) => setTimeout(resolve, 200));
+        bars[k].classList.remove("highlight");
+        k++;
+      }
     }
   }
 
   visualizeArray(array);
 }
 
-// Counting Sort implementation
-async function countingSort(array) {
-  const n = array.length;
+async function bucketSort(array) {
   const arrayContainer = document.getElementById("arrayContainer");
   const bars = Array.from(arrayContainer.children);
-
+  const numBuckets = Math.ceil(Math.sqrt(array.length));
+  const min = Math.min(...array);
   const max = Math.max(...array);
-  const count = new Array(max + 1).fill(0);
-  const output = new Array(n);
+  const bucketRange = (max - min) / numBuckets;
 
-  // Count occurrences
-  for (let i = 0; i < n; i++) {
+  const buckets = Array.from({ length: numBuckets }, () => []);
+
+  for (let i = 0; i < array.length; i++) {
+    const bucketIndex = Math.floor((array[i] - min) / bucketRange);
+    if (bucketIndex >= numBuckets) {
+      buckets[numBuckets - 1].push(array[i]);
+    } else {
+      buckets[bucketIndex].push(array[i]);
+    }
+  }
+
+  let k = 0;
+  for (let i = 0; i < buckets.length; i++) {
+    if (buckets[i].length > 0) {
+      await insertionSortInBucket(buckets[i], k, bars);
+      for (let j = 0; j < buckets[i].length; j++) {
+        array[k++] = buckets[i][j];
+      }
+    }
+  }
+  visualizeArray(array);
+}
+
+async function insertionSortInBucket(bucket, offset, bars) {
+  const n = bucket.length;
+  for (let i = 1; i < n; i++) {
+    let key = bucket[i];
+    let j = i - 1;
+
+    while (j >= 0 && bucket[j] > key) {
+      bucket[j + 1] = bucket[j];
+      bars[offset + j + 1].style.height = `${bucket[j] * 5}px`;
+      bars[offset + j + 1].textContent = bucket[j];
+      bars[offset + j + 1].classList.add("highlight");
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      bars[offset + j + 1].classList.remove("highlight");
+      j = j - 1;
+    }
+    bucket[j + 1] = key;
+    bars[offset + j + 1].style.height = `${key * 5}px`;
+    bars[offset + j + 1].textContent = key;
+    bars[offset + j + 1].classList.add("highlight");
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    bars[offset + j + 1].classList.remove("highlight");
+  }
+}
+
+async function countingSort(array) {
+  const arrayContainer = document.getElementById("arrayContainer");
+  const bars = Array.from(arrayContainer.children);
+  const max = Math.max(...array);
+  const count = Array(max + 1).fill(0);
+
+  for (let i = 0; i < array.length; i++) {
     count[array[i]]++;
   }
 
-  // Update the array with sorted values
-  let index = 0;
-  for (let i = 0; i < count.length; i++) {
+  let k = 0;
+  for (let i = 0; i <= max; i++) {
     while (count[i] > 0) {
-      output[index++] = i;
+      array[k++] = i;
       count[i]--;
     }
   }
 
-  // Update the original array and visualize it
-  for (let i = 0; i < n; i++) {
-    array[i] = output[i];
-    const bar = bars[i];
-    bar.style.height = `${array[i] * 5}px`;
-    bar.textContent = array[i];
-    await new Promise((resolve) => setTimeout(resolve, 500));
+  for (let k = 0; k < array.length; k++) {
+    bars[k].style.height = `${array[k] * 5}px`;
+    bars[k].textContent = array[k];
+    bars[k].classList.add("highlight");
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    bars[k].classList.remove("highlight");
   }
 
   visualizeArray(array);

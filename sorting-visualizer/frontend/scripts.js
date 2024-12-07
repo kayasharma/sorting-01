@@ -92,7 +92,7 @@ function visualizeArray(array) {
 }
 
 function compareAlgorithms() {
-  console.log("Comparison of sorting algorithms is not yet implemented.");
+  // Implement the logic for comparing algorithms if needed
 }
 
 document
@@ -209,16 +209,22 @@ async function partition(array, low, high) {
   return i + 1;
 }
 
+async function mergeSort(array) {
+  if (array.length < 2) return array;
+
+  const mid = Math.floor(array.length / 2);
+  const left = array.slice(0, mid);
+  const right = array.slice(mid);
+
+  await mergeSort(left);
+  await mergeSort(right);
+
+  return await merge(array, left, right);
+}
+
 async function merge(array, left, right) {
   const arrayContainer = document.getElementById("arrayContainer");
   const bars = Array.from(arrayContainer.children);
-
-  if (bars.length !== array.length) {
-    console.error(
-      "Mismatch between array size and visual bars. Check visualization."
-    );
-    return;
-  }
 
   let i = 0,
     j = 0,

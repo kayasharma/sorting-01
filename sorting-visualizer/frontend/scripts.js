@@ -59,8 +59,11 @@ async function runAlgorithm(algorithm, array) {
   });
   const data = await response.json();
   const sortedArray = data.sortedArray;
+  const metrics = data.metrics;
+  displayTimeComplexity(algorithm, metrics);
   const containerId = `sortedArrayContainer-${algorithm}`;
   visualizeArray(sortedArray, containerId, `${algorithm} Sorted Array:`);
+  return metrics;
 }
 
 async function compareAlgorithms() {
@@ -69,16 +72,13 @@ async function compareAlgorithms() {
     alert("Please select at least one sorting algorithm.");
     return;
   }
-  const times = [];
+  const metricsList = [];
   for (let algorithm of selectedAlgorithms) {
     const arrayCopy = [...currentArray];
-    const startTime = performance.now();
-    await runAlgorithm(algorithm, arrayCopy);
-    const endTime = performance.now();
-    times.push({ algorithm, time: (endTime - startTime).toFixed(2) });
+    const metrics = await runAlgorithm(algorithm, arrayCopy);
+    metricsList.push({ algorithm, ...metrics });
   }
-  displayComparisonChart(times);
-  highlightFastestAlgorithm(times);
+  displayMetricsComparison(metricsList);
 }
 
 document
@@ -121,91 +121,36 @@ function getSelectedAlgorithms() {
   return Array.from(checkboxes).map((checkbox) => checkbox.value);
 }
 
-function displayTimeComplexity(algorithm) {
-  let best, average, worst;
-
-  switch (algorithm) {
-    case "bubble":
-      best = "O(n)";
-      average = "O(n^2)";
-      worst = "O(n^2)";
-      break;
-    case "insertion":
-      best = "O(n)";
-      average = "O(n^2)";
-      worst = "O(n^2)";
-      break;
-    case "quicksort":
-      best = "O(n log n)";
-      average = "O(n log n)";
-      worst = "O(n^2)";
-      break;
-    case "merge":
-      best = "O(n log n)";
-      average = "O(n log n)";
-      worst = "O(n log n)";
-      break;
-    case "heap":
-      best = "O(n log n)";
-      average = "O(n log n)";
-      worst = "O(n log n)";
-      break;
-    case "radix":
-      best = "O(nk)";
-      average = "O(nk)";
-      worst = "O(nk)";
-      break;
-    case "bucket":
-      best = "O(n + k)";
-      average = "O(n + k)";
-      worst = "O(n^2)";
-      break;
-    case "counting":
-      best = "O(n + k)";
-      average = "O(n + k)";
-      worst = "O(n + k)";
-      break;
-    default:
-      best = "Unknown";
-      average = "Unknown";
-      worst = "Unknown";
-  }
-
+function displayTimeComplexity(algorithm, metrics) {
   const timeComplexityDiv = document.getElementById("timeComplexity");
-  timeComplexityDiv.innerHTML = `
-    <p>Time Complexity for ${
-      algorithm.charAt(0).toUpperCase() + algorithm.slice(1)
-    } Sort:</p>
+  timeComplexityDiv.innerHTML += `
+    <p>${algorithm.charAt(0).toUpperCase() + algorithm.slice(1)} Sort:</p>
     <ul>
-      <li>Best Case: ${best}</li>
-      <li>Average Case: ${average}</li>
-      <li>Worst Case: ${worst}</li>
+      <li>Comparisons: ${metrics.comparisons}</li>
+      <li>Swaps: ${metrics.swaps}</li>
     </ul>
   `;
 }
 
-function highlightFastestAlgorithm(times) {
-  const fastest = times.reduce(
-    (min, t) => (t.time < min.time ? t : min),
-    times[0]
+function displayMetricsComparison(metricsList) {
+  const fastest = metricsList.reduce(
+    (min, m) => (m.comparisons < min.comparisons ? m : min),
+    metricsList[0]
   );
   const timeComplexityDiv = document.getElementById("timeComplexity");
   timeComplexityDiv.innerHTML = "";
 
-  times.forEach((t) => {
-    const color = t.algorithm === fastest.algorithm ? "limegreen" : "initial";
-    timeComplexityDiv.innerHTML += `<p style="color: ${color};">${t.algorithm} - Time Taken: <strong>${t.time}</strong> milliseconds</p>`;
+  metricsList.forEach((m) => {
+    const color = m.algorithm === fastest.algorithm ? "limegreen" : "initial";
+    timeComplexityDiv.innerHTML += `<p style="color: ${color};">${m.algorithm} - Comparisons: <strong>${m.comparisons}</strong>, Swaps: <strong>${m.swaps}</strong></p>`;
   });
 
-  timeComplexityDiv.innerHTML += `<p><strong>Fastest Algorithm: ${fastest.algorithm}</strong> with ${fastest.time} milliseconds</p>`;
+  timeComplexityDiv.innerHTML += `<p><strong>Fastest Algorithm: ${fastest.algorithm}</strong> with ${fastest.comparisons} comparisons</p>`;
+
+  displayComparisonChart(metricsList);
 }
 
-function displayActualTime(time, algorithm) {
-  const timeComplexityDiv = document.getElementById("timeComplexity");
-  timeComplexityDiv.innerHTML += `<p>${algorithm} - Actual Time Taken: ${time} milliseconds</p>`;
-}
-
-function displayComparisonChart(times) {
+function displayComparisonChart(metricsList) {
   const chartContainer = document.getElementById("chartContainer");
   chartContainer.innerHTML = '<canvas id="comparisonChart"></canvas>';
   const ctx = document.getElementById("comparisonChart").getContext("2d");
@@ -213,19 +158,20 @@ function displayComparisonChart(times) {
   new Chart(ctx, {
     type: "bar",
     data: {
-      labels: times.map((t) => t.algorithm),
+      labels: metricsList.map((m) => m.algorithm),
       datasets: [
         {
-          label: "Time Taken (ms)",
-          data: times.map((t) => t.time),
-          backgroundColor: times.map((t) =>
-            t.algorithm ===
-            times.reduce((min, t) => (t.time < min.time ? t : min), times[0])
-              .algorithm
-              ? "limegreen"
-              : "rgba(75, 192, 192, 0.2)"
-          ),
+          label: "Comparisons",
+          data: metricsList.map((m) => m.comparisons),
+          backgroundColor: "rgba(75, 192, 192, 0.2)",
           borderColor: "rgba(75, 192, 192, 1)",
+          borderWidth: 1,
+        },
+        {
+          label: "Swaps",
+          data: metricsList.map((m) => m.swaps),
+          backgroundColor: "rgba(153, 102, 255, 0.2)",
+          borderColor: "rgba(153, 102, 255, 1)",
           borderWidth: 1,
         },
       ],

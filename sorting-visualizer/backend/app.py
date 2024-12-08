@@ -21,181 +21,231 @@ def sort_array():
     algorithm = request.json.get('algorithm', 'bubble')
     
     if algorithm == 'bubble':
-        sorted_array = bubble_sort(array, algorithm)
+        sorted_array, metrics = bubble_sort(array, algorithm)
     elif algorithm == 'insertion':
-        sorted_array = insertion_sort(array, algorithm)
+        sorted_array, metrics = insertion_sort(array, algorithm)
     elif algorithm == 'quicksort':
-        sorted_array = quick_sort(array, 0, len(array) - 1, algorithm)
+        sorted_array, metrics = quick_sort(array, 0, len(array) - 1, algorithm)
     elif algorithm == 'merge':
-        sorted_array = merge_sort(array, algorithm)
+        sorted_array, metrics = merge_sort(array, algorithm)
     elif algorithm == 'heap':
-        sorted_array = heap_sort(array, algorithm)
+        sorted_array, metrics = heap_sort(array, algorithm)
     elif algorithm == 'radix':
-        sorted_array = radix_sort(array, algorithm)
+        sorted_array, metrics = radix_sort(array, algorithm)
     elif algorithm == 'bucket':
-        sorted_array = bucket_sort(array, algorithm)
+        sorted_array, metrics = bucket_sort(array, algorithm)
     elif algorithm == 'counting':
-        sorted_array = counting_sort(array, algorithm)
+        sorted_array, metrics = counting_sort(array, algorithm)
     else:
         return jsonify({'error': 'Unknown sorting algorithm'}), 400
 
-    return jsonify({'sortedArray': sorted_array})
+    return jsonify({'sortedArray': sorted_array, 'metrics': metrics})
 
-# Bubble sort algorithm implementation with real-time updates
+# Bubble sort algorithm implementation with real-time updates and metrics
 def bubble_sort(arr, algorithm):
     n = len(arr)
+    comparisons = swaps = 0
     for i in range(n):
         for j in range(0, n - i - 1):
+            comparisons += 1
             if arr[j] > arr[j + 1]:
+                swaps += 1
                 arr[j], arr[j + 1] = arr[j + 1], arr[j]
-                # Emit array update to frontend
                 socketio.emit('array update', {'array': arr, 'algorithm': algorithm})
                 time.sleep(0.5)
-    return arr
+    metrics = {'comparisons': comparisons, 'swaps': swaps}
+    return arr, metrics
 
-# Insertion sort algorithm implementation with real-time updates
+# Insertion sort algorithm implementation with real-time updates and metrics
 def insertion_sort(arr, algorithm):
+    comparisons = swaps = 0
     for i in range(1, len(arr)):
         key = arr[i]
         j = i - 1
         while j >= 0 and key < arr[j]:
+            comparisons += 1
+            swaps += 1
             arr[j + 1] = arr[j]
             j -= 1
-            # Emit array update to frontend
             socketio.emit('array update', {'array': arr, 'algorithm': algorithm})
             time.sleep(0.5)
         arr[j + 1] = key
+        comparisons += 1
         socketio.emit('array update', {'array': arr, 'algorithm': algorithm})
         time.sleep(0.5)
-    return arr
+    metrics = {'comparisons': comparisons, 'swaps': swaps}
+    return arr, metrics
 
-# Quick sort algorithm implementation with real-time updates
+# Quick sort algorithm implementation with real-time updates and metrics
 def quick_sort(arr, low, high, algorithm):
+    comparisons = swaps = 0
     if low < high:
-        pi = partition(arr, low, high, algorithm)
-        quick_sort(arr, low, pi - 1, algorithm)
-        quick_sort(arr, pi + 1, high, algorithm)
-    return arr
+        pi, comps, swps = partition(arr, low, high, algorithm)
+        comparisons += comps
+        swaps += swps
+        left_sorted, left_metrics = quick_sort(arr, low, pi - 1, algorithm)
+        right_sorted, right_metrics = quick_sort(arr, pi + 1, high, algorithm)
+        comparisons += left_metrics['comparisons'] + right_metrics['comparisons']
+        swaps += left_metrics['swaps'] + right_metrics['swaps']
+    metrics = {'comparisons': comparisons, 'swaps': swaps}
+    return arr, metrics
 
 def partition(arr, low, high, algorithm):
     pivot = arr[high]
+    comparisons = swaps = 0
     i = low - 1
     for j in range(low, high):
+        comparisons += 1
         if arr[j] < pivot:
             i += 1
+            swaps += 1
             arr[i], arr[j] = arr[j], arr[i]
-            # Emit array update to frontend
             socketio.emit('array update', {'array': arr, 'algorithm': algorithm})
             time.sleep(0.5)
+    swaps += 1
     arr[i + 1], arr[high] = arr[high], arr[i + 1]
     socketio.emit('array update', {'array': arr, 'algorithm': algorithm})
     time.sleep(0.5)
-    return i + 1
+    return i + 1, comparisons, swaps
 
-# Merge sort algorithm implementation with real-time updates
+# Merge sort algorithm implementation with real-time updates and metrics
 def merge_sort(arr, algorithm):
+    comparisons = swaps = 0
     if len(arr) > 1:
         mid = len(arr) // 2
-        left_half = arr[:mid]
-        right_half = arr[mid:]
-
-        merge_sort(left_half, algorithm)
-        merge_sort(right_half, algorithm)
-
+        left_half, left_metrics = merge_sort(arr[:mid], algorithm)
+        right_half, right_metrics = merge_sort(arr[mid:], algorithm)
         i = j = k = 0
+        comparisons += left_metrics['comparisons'] + right_metrics['comparisons']
+        swaps += left_metrics['swaps'] + right_metrics['swaps']
         while i < len(left_half) and j < len(right_half):
+            comparisons += 1
             if left_half[i] < right_half[j]:
+                swaps += 1
                 arr[k] = left_half[i]
                 i += 1
             else:
+                swaps += 1
                 arr[k] = right_half[j]
                 j += 1
             k += 1
-            # Emit array update to frontend
             socketio.emit('array update', {'array': arr, 'algorithm': algorithm})
             time.sleep(0.5)
-
         while i < len(left_half):
+            swaps += 1
             arr[k] = left_half[i]
             i += 1
             k += 1
             socketio.emit('array update', {'array': arr, 'algorithm': algorithm})
             time.sleep(0.5)
-
         while j < len(right_half):
+            swaps += 1
             arr[k] = right_half[j]
             j += 1
             k += 1
             socketio.emit('array update', {'array': arr, 'algorithm': algorithm})
             time.sleep(0.5)
-    return arr
+    metrics = {'comparisons': comparisons, 'swaps': swaps}
+    return arr, metrics
 
-# Heap sort algorithm implementation with real-time updates
+# Heap sort algorithm implementation with real-time updates and metrics
 def heap_sort(arr, algorithm):
+    comparisons = swaps = 0
     def heapify(arr, n, i):
+        nonlocal comparisons, swaps
         largest = i
         l = 2 * i + 1
         r = 2 * i + 2
-
+        comparisons += 1
         if l < n and arr[l] > arr[largest]:
             largest = l
-
+        comparisons += 1
         if r < n and arr[r] > arr[largest]:
             largest = r
-
         if largest != i:
+            swaps += 1
             arr[i], arr[largest] = arr[largest], arr[i]
             heapify(arr, n, largest)
-            # Emit array update to frontend
             socketio.emit('array update', {'array': arr, 'algorithm': algorithm})
             time.sleep(0.5)
-
     n = len(arr)
     for i in range(n // 2 - 1, -1, -1):
         heapify(arr, n, i)
-
     for i in range(n - 1, 0, -1):
+        swaps += 1
         arr[i], arr[0] = arr[0], arr[i]
         heapify(arr, i, 0)
         socketio.emit('array update', {'array': arr, 'algorithm': algorithm})
         time.sleep(0.5)
-    return arr
+    metrics = {'comparisons': comparisons, 'swaps': swaps}
+    return arr, metrics
 
-# Radix sort algorithm implementation with real-time updates
+# Radix sort algorithm implementation with real-time updates and metrics
 def radix_sort(arr, algorithm):
+    comparisons = swaps = 0
     def counting_sort(arr, exp):
+        nonlocal comparisons, swaps
         n = len(arr)
         output = [0] * n
         count = [0] * 10
-
         for i in range(n):
             index = arr[i] // exp
             count[(index % 10)] += 1
-
         for i in range(1, 10):
             count[i] += count[i - 1]
-
         i = n - 1
         while i >= 0:
             index = arr[i] // exp
             output[count[(index % 10)] - 1] = arr[i]
             count[(index % 10)] -= 1
             i -= 1
-
         for i in range(len(arr)):
             arr[i] = output[i]
             socketio.emit('array update', {'array': arr, 'algorithm': algorithm})
             time.sleep(0.5)
-
     max1 = max(arr)
     exp = 1
     while max1 / exp > 0:
         counting_sort(arr, exp)
         exp *= 10
-    return arr
+    metrics = {'comparisons': comparisons, 'swaps': swaps}
+    return arr, metrics
 
-# Bucket sort algorithm implementation with real-time updates
+# Bucket sort algorithm implementation with real-time updates and metrics
+# Radix sort algorithm implementation with real-time updates and metrics
+def radix_sort(arr, algorithm):
+    comparisons = swaps = 0
+    def counting_sort(arr, exp):
+        nonlocal comparisons, swaps
+        n = len(arr)
+        output = [0] * n
+        count = [0] * 10
+        for i in range(n):
+            index = arr[i] // exp
+            count[(index % 10)] += 1
+        for i in range(1, 10):
+            count[i] += count[i - 1]
+        i = n - 1
+        while i >= 0:
+            index = arr[i] // exp
+            output[count[(index % 10)] - 1] = arr[i]
+            count[(index % 10)] -= 1
+            i -= 1
+        for i in range(len(arr)):
+            arr[i] = output[i]
+            socketio.emit('array update', {'array': arr, 'algorithm': algorithm})
+            time.sleep(0.5)
+    max1 = max(arr)
+    exp = 1
+    while max1 / exp > 0:
+        counting_sort(arr, exp)
+        exp *= 10
+    metrics = {'comparisons': comparisons, 'swaps': swaps}
+    return arr, metrics
+
+# Bucket sort algorithm implementation with real-time updates and metrics
 def bucket_sort(arr, algorithm):
+    comparisons = swaps = 0
     bucket = []
     slot_num = 10
     for i in range(slot_num):
@@ -213,14 +263,17 @@ def bucket_sort(arr, algorithm):
     k = 0
     for i in range(slot_num):
         for j in range(len(bucket[i])):
+            swaps += 1
             arr[k] = bucket[i][j]
             k += 1
             socketio.emit('array update', {'array': arr, 'algorithm': algorithm})
             time.sleep(0.5)
-    return arr
+    metrics = {'comparisons': comparisons, 'swaps': swaps}
+    return arr, metrics
 
-# Counting sort algorithm implementation with real-time updates
+# Counting sort algorithm implementation with real-time updates and metrics
 def counting_sort(arr, algorithm):
+    comparisons = swaps = 0
     max_val = max(arr)
     m = max_val + 1
     count = [0] * m                
@@ -229,13 +282,15 @@ def counting_sort(arr, algorithm):
         count[a] += 1            
 
     i = 0
-    for a in range(m):            
-        for c in range(count[a]):  
+    for a in range(m):
+        for c in range(count[a]):
+            swaps += 1
             arr[i] = a
             i += 1
             socketio.emit('array update', {'array': arr, 'algorithm': algorithm})
             time.sleep(0.5)
-    return arr
+    metrics = {'comparisons': comparisons, 'swaps': swaps}
+    return arr, metrics
 
 # Run the Flask application
 if __name__ == '__main__':
